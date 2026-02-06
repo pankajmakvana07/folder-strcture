@@ -1,7 +1,6 @@
 const mysql = require("mysql2/promise");
 require("dotenv").config();
 
-// Create connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || "localhost",
   port: process.env.DB_PORT || 3306,
@@ -15,15 +14,13 @@ const pool = mysql.createPool({
 
 const connectDB = async () => {
   try {
-    // Test connection
     const connection = await pool.getConnection();
     console.log("MySQL database connected successfully");
-    
-    // Create tables if they don't exist
+
     await createTables(connection);
-    
+
     connection.release();
-    console.log("Database tables created/verified successfully");
+    console.log("Database tables created successfully");
   } catch (error) {
     console.error("MySQL connection error:", error);
     process.exit(1);
@@ -31,7 +28,6 @@ const connectDB = async () => {
 };
 
 const createTables = async (connection) => {
-  // Create Users table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS Users (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -47,7 +43,6 @@ const createTables = async (connection) => {
     )
   `);
 
-  // Create Todos table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS Todos (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -62,7 +57,6 @@ const createTables = async (connection) => {
     )
   `);
 
-  // Create Expenses table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS Expenses (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -77,7 +71,6 @@ const createTables = async (connection) => {
     )
   `);
 
-  // Create Items (Folders/Files) table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS Items (
       id INT PRIMARY KEY AUTO_INCREMENT,

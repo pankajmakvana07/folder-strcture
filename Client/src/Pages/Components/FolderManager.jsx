@@ -6,7 +6,6 @@ import {
   createItem,
   deleteItem,
   renameItem,
-  moveItem,
   clearSuccess,
 } from "../../store/folderSlice";
 import "./FolderManager.css";
@@ -14,7 +13,7 @@ import "./FolderManager.css";
 function FolderManager() {
   const dispatch = useDispatch();
   const { folders, childrenMap, loading, error, success } = useSelector(
-    (state) => state.folder
+    (state) => state.folder,
   );
 
   const [openFolders, setOpenFolders] = useState({});
@@ -34,14 +33,11 @@ function FolderManager() {
     dispatch(fetchFolderStructure());
   }, [dispatch]);
 
-  // Refresh specific parent folder's children after action
   useEffect(() => {
     if (success && parentToRefresh) {
       if (parentToRefresh === "root") {
-        // For root items, fetch the entire structure
         dispatch(fetchFolderStructure());
       } else {
-        // For nested items, open the parent and fetch its children
         setOpenFolders((prev) => ({
           ...prev,
           [parentToRefresh]: true,
@@ -51,7 +47,6 @@ function FolderManager() {
       dispatch(clearSuccess());
       setParentToRefresh(null);
     } else if (success) {
-      // If no specific parent, just clear success
       dispatch(clearSuccess());
     }
   }, [success, dispatch, parentToRefresh]);
@@ -89,10 +84,9 @@ function FolderManager() {
       parentId: parentIdForCreate,
     });
 
-    // Mark parent folder to refresh after action
     if (parentIdForCreate) {
-      setParentToRefresh(parentIdForCreate);
     } else {
+      setParentToRefresh(parentIdForCreate);
       setParentToRefresh("root");
     }
 
@@ -101,7 +95,7 @@ function FolderManager() {
         name: newItemName,
         type: createType,
         parentId: parentIdForCreate,
-      })
+      }),
     );
 
     setShowCreateModal(false);
@@ -111,7 +105,6 @@ function FolderManager() {
 
   const handleDeleteClick = (itemId) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
-      // Find the parent ID of the item to delete
       const findParentId = (items, targetId) => {
         for (let item of items) {
           if (item.id === targetId) return item.parentId;
@@ -122,14 +115,14 @@ function FolderManager() {
         }
         return null;
       };
-      
+
       const parentId = findParentId(folders, itemId);
       if (parentId) {
         setParentToRefresh(parentId);
       } else {
         setParentToRefresh("root");
       }
-      
+
       dispatch(deleteItem(itemId));
       setSelectedItem(null);
     }
@@ -160,16 +153,10 @@ function FolderManager() {
     setParentOfRenamingItem(null);
   };
 
-  const toggleMenu = (itemId, e) => {
-    e.stopPropagation();
-    setExpandedMenu(expandedMenu === itemId ? null : itemId);
-  };
-
   const getItemIcon = (item) => {
     if (item.type === "folder") {
       return openFolders[item.id] ? "📂" : "📁";
     }
-    // File icons based on extension
     const ext = item.extension?.toLowerCase() || "";
     const fileIcons = {
       ".js": "📜",
@@ -191,6 +178,8 @@ function FolderManager() {
     const children = childrenMap[folder.id] || [];
     const isLoading = loading[folder.id] || false;
     const isSelected = selectedItem?.id === folder.id;
+    const CreateDate = new Date(folder.createdAt).toISOString().split("T")[0];
+    const len = childrenMap[folder.id] ? "" : "no";
 
     return (
       <div key={folder.id} className="folder-item-wrapper">
@@ -199,16 +188,14 @@ function FolderManager() {
           style={{ paddingLeft: `${level * 20}px` }}
         >
           <div className="folder-content">
-            <button
-              className="toggle-btn"
-              onClick={() => toggleFolder(folder.id)}
-            >
-              {children.length > 0 || !childrenMap.hasOwnProperty(folder.id)
-                ? isOpen
-                  ? "▼"
-                  : "▶"
-                : "•"}
-            </button>
+            {folder.type === "folder" && (
+              <button
+                className="toggle-btn"
+                onClick={() => toggleFolder(folder.id)}
+              >
+                {isOpen ? "▼" : "▶"}
+              </button>
+            )}
 
             <span className="folder-icon">{getItemIcon(folder)}</span>
 
@@ -220,6 +207,7 @@ function FolderManager() {
             </span>
 
             <div className="folder-inline-actions">
+              <span className="mt-2">{CreateDate}</span>
               {folder.type === "folder" && (
                 <button
                   className="action-icon-btn"
@@ -251,7 +239,17 @@ function FolderManager() {
           )}
 
           {isOpen &&
-            children.map((child) => renderFolder(child, level + 1))}
+            childrenMap.hasOwnProperty(folder.id) &&
+            children.length === 0 && (
+              <div
+                className="no-folder"
+                style={{ paddingLeft: `${(level + 1) * 20}px` }}
+              >
+                No folder or file
+              </div>
+            )}
+
+          {isOpen && children.map((child) => renderFolder(child, level + 1))}
         </div>
       </div>
     );
@@ -263,10 +261,7 @@ function FolderManager() {
     <div className="folder-manager">
       <div className="folder-manager-header">
         <h2>📁 Folder Structure</h2>
-        <button
-          className="btn-primary"
-          onClick={() => handleCreateClick(null)}
-        >
+        <button className="btn-primary" onClick={() => handleCreateClick(null)}>
           ➕ New Folder
         </button>
       </div>
@@ -276,22 +271,24 @@ function FolderManager() {
       <div className="folder-tree">
         {rootFolders.length === 0 && !error && (
           <div className="empty-state">
-            <p>No folders yet. Create one to get started!</p>
-            <button
+            <p>No folders...</p>
+            {/* <button
               className="btn-primary"
               onClick={() => handleCreateClick(null)}
             >
               ➕ Create First Folder
-            </button>
+            </button> */}
           </div>
         )}
 
         {rootFolders.map((folder) => renderFolder(folder))}
       </div>
 
-      {/* Create Modal */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCreateModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Create New {createType === "folder" ? "Folder" : "File"}</h3>
 
@@ -321,10 +318,7 @@ function FolderManager() {
             </div>
 
             <div className="modal-actions">
-              <button
-                className="btn-primary"
-                onClick={handleCreateSubmit}
-              >
+              <button className="btn-primary" onClick={handleCreateSubmit}>
                 Create
               </button>
               <button
@@ -338,9 +332,11 @@ function FolderManager() {
         </div>
       )}
 
-      {/* Rename Modal */}
       {showRenameModal && (
-        <div className="modal-overlay" onClick={() => setShowRenameModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowRenameModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Rename Item</h3>
 
@@ -359,10 +355,7 @@ function FolderManager() {
             </div>
 
             <div className="modal-actions">
-              <button
-                className="btn-primary"
-                onClick={handleRenameSubmit}
-              >
+              <button className="btn-primary" onClick={handleRenameSubmit}>
                 Rename
               </button>
               <button

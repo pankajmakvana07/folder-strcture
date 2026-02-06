@@ -15,7 +15,12 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 function Users() {
   const dispatch = useDispatch();
   const toast = useRef(null);
-  const { users, isLoading, user: currentUser, error } = useSelector((state) => state.auth);
+  const {
+    users,
+    isLoading,
+    user: currentUser,
+    error,
+  } = useSelector((state) => state.auth);
 
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -66,7 +71,8 @@ function Users() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
+    if (!formData.firstName.trim())
+      newErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
 
@@ -85,32 +91,34 @@ function Users() {
     };
 
     if (editingId) {
-      dispatch(updateUser({ id: editingId, data: userData })).then((result) => {
-        if (result.type === updateUser.fulfilled.type) {
-          toast.current?.show({
-            severity: "success",
-            summary: "Success",
-            detail: "User updated successfully",
-            life: 3000,
-          });
-          dispatch(getAllUsers());
-          setShowDialog(false);
-        } else {
+      dispatch(updateUser({ id: editingId, data: userData }))
+        .then((result) => {
+          if (result.type === updateUser.fulfilled.type) {
+            toast.current?.show({
+              severity: "success",
+              summary: "Success",
+              detail: "User updated successfully",
+              life: 3000,
+            });
+            dispatch(getAllUsers());
+            setShowDialog(false);
+          } else {
+            toast.current?.show({
+              severity: "error",
+              summary: "Error",
+              detail: "Failed to update user",
+              life: 3000,
+            });
+          }
+        })
+        .catch((error) => {
           toast.current?.show({
             severity: "error",
             summary: "Error",
-            detail: "Failed to update user",
+            detail: error?.message || "Failed to update user",
             life: 3000,
           });
-        }
-      }).catch((error) => {
-        toast.current?.show({
-          severity: "error",
-          summary: "Error",
-          detail: error?.message || "Failed to update user",
-          life: 3000,
         });
-      });
     }
   };
 
@@ -165,7 +173,6 @@ function Users() {
           icon="pi pi-trash"
           rounded
           outlined
-         
           disabled={isRowAdmin}
           onClick={() => handleDelete(rowData)}
         />
@@ -330,6 +337,7 @@ function Users() {
               </label>
               <InputText
                 value={formData.email}
+                disabled
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
                   setErrors("");

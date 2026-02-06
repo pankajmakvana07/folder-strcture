@@ -1,16 +1,97 @@
-# React + Vite
+# 📋 Todo & Expense Management App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack application for managing todos, expenses, and folders with user authentication, role-based access control, and real-time updates.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📝 **Todo Management** - Create, update, delete, and track todo tasks
+- 💰 **Expense Tracking** - Manage and monitor expenses with categorization
+- 📁 **Folder Organization** - Organize tasks and expenses into folders
+- 👥 **User Management** - Admin panel for managing users and roles
+- 🔐 **Authentication** - Secure JWT-based authentication with role-based access control
+- 📊 **Dashboard** - Overview of today's todos and expense summary
+- 🎨 **Responsive UI** - Modern interface built with PrimeReact and TailwindCSS
+- 🔑 **Forgate Password** - reset password Usein link in mail 
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend:**
+- React 18
+- Vite (Build tool)
+- Redux Toolkit (State management)
+- PrimeReact (UI Components)
+- TailwindCSS (Styling)
+- js-cookie (Cookie management)
 
-## Expanding the ESLint configuration
+**Backend:**
+- Node.js & Express
+- Sequelize (ORM)
+- JWT (Authentication)
+- MySQL (Database)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📦 Installation
+
+### Frontend Setup
+```bash
+cd Client
+npm install
+npm run dev
+```
+
+### Backend Setup
+```bash
+cd Server
+npm install
+npm start
+```
+
+The frontend runs on `http://localhost:5173` and backend on `http://localhost:5000`.
+
+## 📄 Project Structure
+
+```
+Client/
+├── src/
+│   ├── Pages/           # Page components (Login, Dashboard, Todo, etc.)
+│   ├── components/      # Reusable components (ProtectedRoute, Navbar)
+│   ├── store/          # Redux slices (auth, todo, expense, folder)
+│   ├── App.jsx         # Main app component
+│   └── main.jsx        # Entry point
+
+Server/
+├── controllers/        # Business logic
+├── routes/            # API endpoints
+├── models/            # Database models
+├── middleware/        # Auth middleware
+├── config/            # Database configuration
+└── server.js          # Server entry point
+```
+
+## 🖼️ Main Pages
+
+- **Login/Register** - User authentication
+- **Dashboard** - Quick overview of today's todos and expense summary
+- **Todo** - Full todo management interface with DataTable
+- **Expense** - Expense tracking with categorization
+- **Folder Structure** - Organize items into custom folders
+- **Users** - Admin panel for user management
+- **Profile** - User profile settings
+
+## 🔒 User Roles
+
+- **Admin** - Full access to all features, user management
+- **User** - Standard access to personal todos and expenses
+
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Install dependencies for both Client and Server
+3. Configure database in `Server/config/db.js`
+4. Run migrations (if applicable)
+5. Start the backend server: `npm start`
+6. Start the frontend dev server: `npm run dev`
+7. Login with your credentials or register a new account
+
+## 📝 License
+
+This project is open source and available under the MIT License.

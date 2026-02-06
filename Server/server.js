@@ -16,7 +16,6 @@ app.use(express.json());
 // Connect to MySQL
 connectDB().catch((err) => {
   console.error("Failed to connect to MySQL:", err.message);
-  console.log("Server will start anyway, but database operations may fail");
 });
 
 // Routes

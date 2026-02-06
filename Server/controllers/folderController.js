@@ -1,6 +1,5 @@
 const { pool } = require("../config/db");
 
-// Comprehensive list of allowed file extensions
 const VALID_EXTENSIONS = {
   // Programming Languages
   ".js": "JavaScript",
@@ -221,7 +220,7 @@ exports.createItem = async (req, res) => {
   }
 };
 
-// Get folder structure tree for logged-in user (only root items)
+// Get folder structure tree for logged-in user 
 exports.getFolderStructure = async (req, res) => {
   try {
     const userId = req.userId;
@@ -406,62 +405,4 @@ exports.renameItem = async (req, res) => {
   }
 };
 
-// Move item to different parent folder
-exports.moveItem = async (req, res) => {
-  try {
-    const { itemId } = req.params;
-    const { newParentId } = req.body;
-    const userId = req.userId;
-    const connection = await pool.getConnection();
 
-    try {
-      // Find the item
-      const [items] = await connection.execute(
-        "SELECT id, type FROM Items WHERE id = ? AND userId = ?",
-        [itemId, userId]
-      );
-
-      if (items.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Item not found or unauthorized" });
-      }
-
-      // If newParentId is provided, verify parent exists and is a folder
-      if (newParentId) {
-        const [parents] = await connection.execute(
-          "SELECT id, type FROM Items WHERE id = ? AND userId = ? AND type = ?",
-          [newParentId, userId, "folder"]
-        );
-
-        if (parents.length === 0) {
-          return res
-            .status(404)
-            .json({ message: "Target folder not found or unauthorized" });
-        }
-      }
-
-      // Update the item's parent
-      await connection.execute("UPDATE Items SET parentId = ? WHERE id = ?", [
-        newParentId || null,
-        itemId,
-      ]);
-
-      // Fetch updated item
-      const [updatedItems] = await connection.execute(
-        "SELECT id, name, type, parentId, extension, createdAt FROM Items WHERE id = ?",
-        [itemId]
-      );
-
-      res.status(200).json({
-        message: "Item moved successfully",
-        item: updatedItems[0],
-      });
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error("Error moving item:", error);
-    res.status(500).json({ message: "Error moving item" });
-  }
-};

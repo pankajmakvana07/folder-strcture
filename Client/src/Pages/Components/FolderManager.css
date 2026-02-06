@@ -54,7 +54,7 @@
 
 /* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #3a6ded 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -67,10 +67,10 @@
   white-space: nowrap;
 }
 
-.btn-primary:hover {
+/* .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
-}
+} */
 
 .btn-primary:active {
   transform: translateY(0);
@@ -96,10 +96,10 @@
   transition: all 0.2s ease;
 }
 
-.btn-secondary:hover {
+/* .btn-secondary:hover {
   background: #d1d5db;
   transform: translateY(-1px);
-}
+} */
 
 /* Folder Tree Container */
 .folder-tree {
@@ -134,11 +134,11 @@
   padding: 0.5rem 0.75rem;
 }
 
-.folder-item.selected {
+/* .folder-item.selected {
   background: linear-gradient(135deg, #ede9fe 0%, #f3e8ff 100%);
   border-left: 4px solid #7C3AED;
   padding-left: 10px;
-}
+} */
 
 /* Folder Content */
 .folder-content {
@@ -150,7 +150,7 @@
   transition: all 0.2s ease;
 }
 
-.folder-content:hover {
+.folder-content {
   background: #f9fafb;
   border-radius: 6px;
   padding-left: 0.5rem;
@@ -180,10 +180,10 @@
   flex-shrink: 0;
 }
 
-.toggle-btn:hover {
+/* .toggle-btn:hover {
   color: #4F46E5;
   transform: scale(1.1);
-}
+} */
 
 /* Folder Icon */
 .folder-icon {
@@ -209,10 +209,10 @@
   transition: color 0.2s ease;
 }
 
-.folder-name:hover {
+/* .folder-name:hover {
   color: #4F46E5;
   font-weight: 600;
-}
+} */
 
 @media (max-width: 768px) {
   .folder-name {
@@ -229,7 +229,7 @@
   flex-shrink: 0;
 }
 
-.folder-content:hover .folder-inline-actions {
+.folder-content .folder-inline-actions {
   opacity: 1;
 }
 
@@ -254,18 +254,18 @@
   flex-shrink: 0;
 }
 
-.action-icon-btn:hover {
+/* .action-icon-btn:hover {
   background: #f0f0f0;
   transform: scale(1.15);
-}
+} */
 
 .action-icon-btn:active {
   transform: scale(0.95);
 }
 
-.action-icon-btn.delete-icon:hover {
+/* .action-icon-btn.delete-icon:hover {
   background: #fee2e2;
-}
+} */
 
 @media (max-width: 768px) {
   .action-icon-btn {
@@ -481,9 +481,9 @@
   transition: background 0.2s ease;
 }
 
-.folder-tree::-webkit-scrollbar-thumb:hover {
+/* .folder-tree::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
-}
+} */
 
 /* Firefox Scrollbar */
 .folder-tree {

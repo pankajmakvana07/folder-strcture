@@ -41,7 +41,7 @@ export const createItem = createAsyncThunk(
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
-      
+
       const response = await axios.post(
         `${API_URL}/create`,
         { name, type, parentId },
@@ -51,13 +51,15 @@ export const createItem = createAsyncThunk(
           },
         },
       );
-      
+
       console.log("Create item response:", response.data);
       return response.data.item;
     } catch (error) {
       console.error("Create item error:", error);
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Failed to create item",
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create item",
       );
     }
   },
@@ -105,29 +107,6 @@ export const renameItem = createAsyncThunk(
   },
 );
 
-// Move item
-export const moveItem = createAsyncThunk(
-  "folder/moveItem",
-  async ({ itemId, newParentId }, { rejectWithValue }) => {
-    try {
-      const response = await axios.put(
-        `${API_URL}/${itemId}/move`,
-        { newParentId },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        },
-      );
-      return response.data.item;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to move item",
-      );
-    }
-  },
-);
-
 // Fetch children of a specific folder
 export const fetchFolderChildren = createAsyncThunk(
   "folder/fetchFolderChildren",
@@ -155,7 +134,7 @@ export const fetchFolderChildren = createAsyncThunk(
 
 const initialState = {
   folders: [],
-  childrenMap: {}, // Map to store children for each parent: { parentId: [children] }
+  childrenMap: {},
   loading: false,
   error: null,
   success: false,
@@ -170,7 +149,7 @@ const folderSlice = createSlice({
     },
     clearSuccess: (state) => {
       state.success = false;
-    }
+    },
   },
   extraReducers: (builder) => {
     // Fetch folder structure
@@ -230,24 +209,6 @@ const folderSlice = createSlice({
         state.success = true;
       })
       .addCase(renameItem.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
-
-    // Move item
-    builder
-      .addCase(moveItem.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(moveItem.fulfilled, (state) => {
-        state.loading = false;
-        state.success = true;
-        // Refresh folder structure after move
-        state.folders = [];
-        state.childrenMap = {};
-      })
-      .addCase(moveItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

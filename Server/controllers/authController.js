@@ -38,7 +38,7 @@ exports.register = async (req, res) => {
       // Check if user already exists
       const [existingUser] = await connection.execute(
         "SELECT id FROM Users WHERE email = ?",
-        [email]
+        [email],
       );
 
       if (existingUser.length > 0) {
@@ -48,11 +48,12 @@ exports.register = async (req, res) => {
       // Hash password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
 
       // Create new user
       const [result] = await connection.execute(
-        "INSERT INTO Users (firstName, lastName, email, password) VALUES (?, ?, ?, ?)",
-        [firstName, lastName, email, hashedPassword]
+        "INSERT INTO Users (firstName, lastName, email, password,  createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)",
+        [firstName, lastName, email, hashedPassword, now ,now]
       );
 
       const userId = result.insertId;
@@ -97,7 +98,7 @@ exports.login = async (req, res) => {
       // Find user by email
       const [users] = await connection.execute(
         "SELECT * FROM Users WHERE email = ?",
-        [email]
+        [email],
       );
 
       if (users.length === 0) {
@@ -143,7 +144,7 @@ exports.getProfile = async (req, res) => {
     try {
       const [users] = await connection.execute(
         "SELECT id, firstName, lastName, email, role, createdAt FROM Users WHERE id = ?",
-        [req.userId]
+        [req.userId],
       );
 
       if (users.length === 0) {
@@ -181,10 +182,13 @@ exports.getAllUsers = async (req, res) => {
       // Check if current user is admin
       const [currentUserResult] = await connection.execute(
         "SELECT role FROM Users WHERE id = ?",
-        [req.userId]
+        [req.userId],
       );
 
-      if (currentUserResult.length === 0 || currentUserResult[0].role !== "admin") {
+      if (
+        currentUserResult.length === 0 ||
+        currentUserResult[0].role !== "admin"
+      ) {
         return res
           .status(403)
           .json({ message: "Access denied. Admin role required." });
@@ -192,7 +196,7 @@ exports.getAllUsers = async (req, res) => {
 
       // Get all users
       const [users] = await connection.execute(
-        "SELECT id, firstName, lastName, email, role, createdAt FROM Users"
+        "SELECT id, firstName, lastName, email, role, createdAt FROM Users",
       );
 
       res.status(200).json({
@@ -230,7 +234,7 @@ exports.forgotPassword = async (req, res) => {
       // Find user by email
       const [users] = await connection.execute(
         "SELECT id, firstName, email FROM Users WHERE email = ?",
-        [email]
+        [email],
       );
 
       if (users.length === 0) {
@@ -253,7 +257,7 @@ exports.forgotPassword = async (req, res) => {
 
       await connection.execute(
         "UPDATE Users SET resetPasswordToken = ?, resetPasswordExpire = ? WHERE id = ?",
-        [resetTokenHash, resetExpire, user.id]
+        [resetTokenHash, resetExpire, user.id],
       );
 
       // Create reset URL
@@ -297,7 +301,7 @@ exports.forgotPassword = async (req, res) => {
         // Reset the token if email fails
         await connection.execute(
           "UPDATE Users SET resetPasswordToken = NULL, resetPasswordExpire = NULL WHERE id = ?",
-          [user.id]
+          [user.id],
         );
         return res.status(500).json({
           message: "Failed to send reset email. Please try again later.",
@@ -347,7 +351,7 @@ exports.resetPassword = async (req, res) => {
       // Find user with valid reset token
       const [users] = await connection.execute(
         "SELECT id FROM Users WHERE resetPasswordToken = ? AND resetPasswordExpire > NOW()",
-        [resetTokenHash]
+        [resetTokenHash],
       );
 
       if (users.length === 0) {
@@ -365,7 +369,7 @@ exports.resetPassword = async (req, res) => {
       // Update password
       await connection.execute(
         "UPDATE Users SET password = ?, resetPasswordToken = NULL, resetPasswordExpire = NULL WHERE id = ?",
-        [hashedPassword, user.id]
+        [hashedPassword, user.id],
       );
 
       res.status(200).json({
@@ -395,7 +399,7 @@ exports.updateUser = async (req, res) => {
       // Check if user exists
       const [users] = await connection.execute(
         "SELECT id FROM Users WHERE id = ?",
-        [id]
+        [id],
       );
 
       if (users.length === 0) {
@@ -437,7 +441,7 @@ exports.updateUser = async (req, res) => {
       // Fetch updated user
       const [updatedUsers] = await connection.execute(
         "SELECT id, firstName, lastName, email, role FROM Users WHERE id = ?",
-        [id]
+        [id],
       );
 
       const user = updatedUsers[0];
@@ -472,7 +476,7 @@ exports.deleteUser = async (req, res) => {
       // Check if user exists
       const [users] = await connection.execute(
         "SELECT id FROM Users WHERE id = ?",
-        [id]
+        [id],
       );
 
       if (users.length === 0) {

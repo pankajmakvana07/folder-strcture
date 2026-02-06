@@ -152,7 +152,8 @@ function Expense() {
 
   const amountBodyTemplate = (rowData) => (
     <span className="font-semibold text-red-600">
-      ₹{parseFloat(rowData.amount).toFixed(2)}
+      ₹{Number(rowData.amount).toFixed(2)}
+      {/* {console.log(typeof(Number(rowData.amount)))} */}
     </span>
   );
 
@@ -195,7 +196,6 @@ function Expense() {
         icon="pi pi-trash"
         rounded
         outlined
-       
         onClick={() => handleDelete(rowData.id)}
       />
     </div>
@@ -304,7 +304,7 @@ function Expense() {
                 Total Expance
               </h3>
               <p className="text-3xl tetx-right font-bold text-gray-900">
-                ₹{totalExpenses?.toFixed(2) || "0.00"}
+                ₹{Number(totalExpenses)?.toFixed(2) || "0.00"}
               </p>
             </div>
           </div>
