@@ -8,17 +8,27 @@ import {
   renameItem,
   clearSuccess,
 } from "../../store/folderSlice";
-import { deleteFile, downloadFile, clearSuccess as clearFileSuccess } from "../../store/fileSlice";
+import {
+  deleteFile,
+  downloadFile,
+  clearSuccess as clearFileSuccess,
+} from "../../store/fileSlice";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import "./FolderManager.css";
 import FileUpload from "./FileUpload";
 import ImagePreviewModal from "../Components/Preview";
+import PermissionModal from "../Components/PermissionModal";
 
 function FolderManager() {
   const dispatch = useDispatch();
   const { folders, childrenMap, filesMap, loading, error, success } =
     useSelector((state) => state.folder);
   const { success: fileSuccess } = useSelector((state) => state.file);
+
+  const { permissions } = useSelector((state) => state.permissions);
+  const { error: permissionError, success: permissionSuccess } = useSelector(
+    (state) => state.permissions,
+  );
 
   const [openFolders, setOpenFolders] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
@@ -33,6 +43,9 @@ function FolderManager() {
   const [parentToRefresh, setParentToRefresh] = useState(null);
   const [parentOfRenamingItem, setParentOfRenamingItem] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [selectedItemForPermission, setSelectedItemForPermission] =
+    useState(null);
 
   useEffect(() => {
     dispatch(fetchFolderStructure());
@@ -154,8 +167,7 @@ function FolderManager() {
         dispatch(deleteItem(itemId));
         setSelectedItem(null);
       },
-      reject: () => {
-      },
+      reject: () => {},
     });
   };
 
@@ -189,7 +201,7 @@ function FolderManager() {
       message: "Are you sure you want to delete this file?",
       header: "Confirm Delete",
       icon: "pi pi-exclamation-triangle",
-      
+
       accept: () => {
         if (parentId) {
           setParentToRefresh(parentId);
@@ -198,8 +210,7 @@ function FolderManager() {
         }
         dispatch(deleteFile(fileId));
       },
-      reject: () => {
-      },
+      reject: () => {},
     });
   };
 
@@ -257,6 +268,16 @@ function FolderManager() {
     return fileIcons[ext] || "📄";
   };
 
+  const popUpHandler = (folderId) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) {
+      alert("Folder not found");
+      return;
+    }
+    setSelectedItemForPermission(folder);
+    setShowPermissionModal(true);
+  };
+
   const renderFolder = (folder, level = 0) => {
     const isOpen = openFolders[folder.id];
     const children = childrenMap[folder.id] || [];
@@ -291,7 +312,15 @@ function FolderManager() {
             </span>
 
             <div className="folder-inline-actions">
-              <span className="mt-2">{CreateDate || "NA"}</span>
+              <span className="mt-2 mr-4">{CreateDate || "NA"}</span>
+
+              <button
+                className="action-icon-btn mr-2"
+                title="permissions"
+                onClick={() => popUpHandler(folder.id)}
+              >
+                <i className="pi pi-lock"></i>
+              </button>
               {folder.type === "folder" && (
                 <button
                   className="action-icon-btn"
@@ -571,6 +600,17 @@ function FolderManager() {
         <ImagePreviewModal
           file={previewFile}
           onClose={() => setPreviewFile(null)}
+        />
+      )}
+
+      {showPermissionModal && selectedItemForPermission && (
+        <PermissionModal
+          itemId={selectedItemForPermission.id}
+          itemName={selectedItemForPermission.name}
+          onClose={() => {
+            setShowPermissionModal(false);
+            setSelectedItemForPermission(null);
+          }}
         />
       )}
 

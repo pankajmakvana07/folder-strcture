@@ -4,6 +4,7 @@ import todoReducer from "./todoSlice";
 import expenseReducer from "./expenseSlice";
 import folderReducer from "./folderSlice";
 import fileReducer from "./fileSlice";
+import permissionReducer from "./permissionSlice";
 
 const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
     expense: expenseReducer,
     folder: folderReducer,
     file: fileReducer,
+    permissions: permissionReducer,
   },
 });
 
