@@ -226,18 +226,43 @@ exports.getFolderStructure = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
-      const folderQuery =
+      const ownFolderQuery =
         "SELECT id, name, type, parentId, extension, createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items WHERE userId = ? AND parentId IS NULL AND type = 'folder'";
 
-      const createdFileQuery =
+      const ownFileQuery =
         "SELECT id, name, type, parentId, extension, createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items WHERE userId = ? AND parentId IS NULL AND type = 'file'";
 
-      const uploadedFileQuery =
+      const ownUploadedFileQuery =
         "SELECT id, name, 'file' as type, parentId, NULL as extension, createdAt, filePath, originalName, size, mimeType FROM Files WHERE userId = ? AND parentId IS NULL";
 
-      const combinedQuery = `(${folderQuery}) UNION (${createdFileQuery}) UNION (${uploadedFileQuery}) ORDER BY type DESC, name ASC`;
+      const sharedRootFolderQuery =
+        "SELECT i.id, i.name, i.type, i.parentId, i.extension, i.createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items i INNER JOIN Permissions p ON i.id = p.itemId WHERE p.userId = ? AND p.can_view = true AND i.parentId IS NULL AND i.type = 'folder'";
+
+      const parentFolderOfSharedQuery = `SELECT DISTINCT i.id, i.name, i.type, i.parentId, i.extension, i.createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items i WHERE i.parentId IS NULL AND i.type = 'folder' AND EXISTS (
+          SELECT 1 FROM Items child 
+          INNER JOIN Permissions p ON child.id = p.itemId 
+          WHERE p.userId = ? AND p.can_view = true 
+          AND (
+            child.parentId = i.id 
+            OR child.parentId IN (
+              SELECT id FROM Items 
+              WHERE parentId = i.id 
+              UNION ALL 
+              SELECT id FROM Items parent_items 
+              WHERE EXISTS (
+                SELECT 1 FROM Items nested 
+                WHERE nested.parentId = parent_items.id 
+                AND nested.parentId IS NOT NULL
+              )
+            )
+          )
+        )`;
+
+      const combinedQuery = `(${ownFolderQuery}) UNION (${ownFileQuery}) UNION (${ownUploadedFileQuery}) UNION (${sharedRootFolderQuery}) UNION (${parentFolderOfSharedQuery}) ORDER BY type DESC, name ASC`;
 
       const [items] = await connection.execute(combinedQuery, [
+        userId,
+        userId,
         userId,
         userId,
         userId,
@@ -260,61 +285,115 @@ exports.getItemsByParent = async (req, res) => {
   try {
     const { parentId } = req.params;
     const userId = req.userId;
+
     const connection = await pool.getConnection();
 
     try {
-      let folderQuery =
-        "SELECT id, name, type, parentId, extension, createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items WHERE userId = ? AND type = 'folder'";
-      const folderParams = [userId];
+      if (!parentId || parentId === "null") {
+        const [rootItems] = await connection.execute(
+          `
+          SELECT id, name, type, parentId, extension, createdAt,
+          NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType
+          FROM Items
+          WHERE parentId IS NULL
+          `,
+        );
 
-      if (parentId && parentId !== "null") {
-        folderQuery += " AND parentId = ?";
-        folderParams.push(parentId);
-      } else {
-        folderQuery += " AND parentId IS NULL";
+        const [rootFiles] = await connection.execute(
+          `
+          SELECT id, name, 'file' as type, parentId,
+          NULL as extension, createdAt,
+          filePath, originalName, size, mimeType
+          FROM Files
+          WHERE parentId IS NULL
+          `,
+        );
+
+        const data = [...rootItems, ...rootFiles];
+
+        return res.status(200).json({
+          message: "Root items retrieved successfully",
+          data,
+        });
       }
 
-      let createdFileQuery =
-        "SELECT id, name, type, parentId, extension, createdAt, NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType FROM Items WHERE userId = ? AND type = 'file'";
-      const createdFileParams = [userId];
+      const accessQuery = `
+      WITH RECURSIVE folder_path AS (
+          SELECT id, parentId, userId
+          FROM Items
+          WHERE id = ?
 
-      if (parentId && parentId !== "null") {
-        createdFileQuery += " AND parentId = ?";
-        createdFileParams.push(parentId);
-      } else {
-        createdFileQuery += " AND parentId IS NULL";
+          UNION ALL
+
+          SELECT i.id, i.parentId, i.userId
+          FROM Items i
+          INNER JOIN folder_path fp ON fp.parentId = i.id
+      )
+
+      SELECT COUNT(*) as hasAccess
+      FROM folder_path fp
+      LEFT JOIN Permissions p 
+          ON p.itemId = fp.id 
+          AND p.userId = ?
+          AND p.can_view = 1
+      WHERE 
+          fp.userId = ?  -- owner
+          OR p.itemId IS NOT NULL
+      LIMIT 1;
+      `;
+
+      const [accessResult] = await connection.execute(accessQuery, [
+        parentId,
+        userId,
+        userId,
+      ]);
+
+      if (accessResult[0].hasAccess === 0) {
+        return res.status(403).json({
+          message: "Access denied to this folder",
+        });
       }
 
-      let uploadedFileQuery =
-        "SELECT id, name, 'file' as type, parentId, NULL as extension, createdAt, filePath, originalName, size, mimeType FROM Files WHERE userId = ?";
-      const uploadedFileParams = [userId];
+      const [items] = await connection.execute(
+        `
+        SELECT id, name, type, parentId, extension, createdAt,
+        NULL as filePath, NULL as originalName, NULL as size, NULL as mimeType
+        FROM Items
+        WHERE parentId = ?
+        `,
+        [parentId],
+      );
 
-      if (parentId && parentId !== "null") {
-        uploadedFileQuery += " AND parentId = ?";
-        uploadedFileParams.push(parentId);
-      } else {
-        uploadedFileQuery += " AND parentId IS NULL";
-      }
+      const [files] = await connection.execute(
+        `
+        SELECT id, name, 'file' as type, parentId,
+        NULL as extension, createdAt,
+        filePath, originalName, size, mimeType
+        FROM Files
+        WHERE parentId = ?
+        `,
+        [parentId],
+      );
 
-      const combinedQuery = `(${folderQuery}) UNION (${createdFileQuery}) UNION (${uploadedFileQuery}) ORDER BY type DESC, name ASC`;
-      const combinedParams = [
-        ...folderParams,
-        ...createdFileParams,
-        ...uploadedFileParams,
-      ];
-
-      const [items] = await connection.execute(combinedQuery, combinedParams);
+      const data = [...items, ...files].sort((a, b) => {
+        if (a.type === b.type) {
+          return a.name.localeCompare(b.name);
+        }
+        return a.type === "folder" ? -1 : 1;
+      });
 
       res.status(200).json({
         message: "Items retrieved successfully",
-        data: items,
+        data,
       });
     } finally {
       connection.release();
     }
   } catch (error) {
     console.error("Error fetching items:", error);
-    res.status(500).json({ message: "Error fetching items" });
+    res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
 
@@ -354,7 +433,6 @@ exports.deleteItem = async (req, res) => {
             ]);
           }
 
-          // Delete all uploaded files in this folder
           const [uploadedFiles] = await connection.execute(
             "SELECT filePath FROM Files WHERE parentId = ? AND userId = ?",
             [parentId, userId],
@@ -364,7 +442,10 @@ exports.deleteItem = async (req, res) => {
             const path = require("path");
             const fs = require("fs");
             const uploadsDir = path.join(__dirname, "../Uploads");
-            const filePath = path.join(uploadsDir, path.basename(file.filePath));
+            const filePath = path.join(
+              uploadsDir,
+              path.basename(file.filePath),
+            );
             if (fs.existsSync(filePath)) {
               fs.unlinkSync(filePath);
             }
@@ -378,7 +459,6 @@ exports.deleteItem = async (req, res) => {
 
         await deleteChildren(itemId);
 
-        // Also delete uploaded files directly under this folder
         const [directFiles] = await connection.execute(
           "SELECT filePath FROM Files WHERE parentId = ? AND userId = ?",
           [itemId, userId],

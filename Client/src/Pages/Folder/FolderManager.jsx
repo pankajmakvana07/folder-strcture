@@ -87,7 +87,6 @@ function FolderManager() {
 
   const toggleFolder = (folderId) => {
     const isOpen = openFolders[folderId];
-    console.log(isOpen);
 
     if (!isOpen) {
       if (!childrenMap[folderId]) {

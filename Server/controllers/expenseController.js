@@ -34,7 +34,6 @@ exports.getAllExpenses = async (req, res) => {
       .json({ message: error.message || "Failed to fetch expenses" });
   }
 };
-
 // Create new expense
 exports.createExpense = async (req, res) => {
   try {
