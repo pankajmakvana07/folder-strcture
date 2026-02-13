@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAvailableUsers,
@@ -16,6 +16,7 @@ function PermissionModal({ itemId, itemName, onClose }) {
     useSelector((state) => state.permissions);
 
   const [userPermissions, setUserPermissions] = useState({});
+  const [originalPermissions, setOriginalPermissions] = useState({});
 
   useEffect(() => {
     dispatch(fetchAvailableUsers());
@@ -33,7 +34,9 @@ function PermissionModal({ itemId, itemName, onClose }) {
         can_delete: perm.can_delete,
       };
     });
+
     setUserPermissions(permissionsMap);
+    setOriginalPermissions(permissionsMap);
   }, [itemPermissions]);
 
   const handlePermissionChange = (userId, permissionType) => {
@@ -52,44 +55,85 @@ function PermissionModal({ itemId, itemName, onClose }) {
     }));
   };
 
-  const handleSavePermissions = (userId) => {
-    const permissions = userPermissions[userId] || {
-      can_view: false,
-      can_create: false,
-      can_upload: false,
-      can_edit: false,
-      can_delete: false,
-    };
+  const hasChanges = useMemo(() => {
+    const allUserIds = new Set([
+      ...Object.keys(userPermissions),
+      ...Object.keys(originalPermissions),
+    ]);
 
-    dispatch(
-      updateItemPermission({
-        itemId,
-        userId,
-        can_view: permissions.can_view,
-        can_create: permissions.can_create,
-        can_upload: permissions.can_upload,
-        can_edit: permissions.can_edit,
-        can_delete: permissions.can_delete,
-      }),
-    );
-  };
+    for (const userId of allUserIds) {
+      const current = userPermissions[userId] || {
+        can_view: false,
+        can_create: false,
+        can_upload: false,
+        can_edit: false,
+        can_delete: false,
+      };
 
-  const handleRemovePermission = (userId) => {
-    dispatch(removeItemPermission({ itemId, userId }));
-    setUserPermissions((prev) => {
-      const newPermissions = { ...prev };
-      delete newPermissions[userId];
-      return newPermissions;
-    });
+      const original = originalPermissions[userId] || {
+        can_view: false,
+        can_create: false,
+        can_upload: false,
+        can_edit: false,
+        can_delete: false,
+      };
+
+      if (JSON.stringify(current) !== JSON.stringify(original)) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [userPermissions, originalPermissions]);
+
+  const handleSaveAll = async () => {
+    const allUserIds = new Set([
+      ...Object.keys(userPermissions),
+      ...Object.keys(originalPermissions),
+    ]);
+
+    for (const userId of allUserIds) {
+      const current = userPermissions[userId] || {
+        can_view: false,
+        can_create: false,
+        can_upload: false,
+        can_edit: false,
+        can_delete: false,
+      };
+
+      const original = originalPermissions[userId] || {
+        can_view: false,
+        can_create: false,
+        can_upload: false,
+        can_edit: false,
+        can_delete: false,
+      };
+
+      const hasChanged = JSON.stringify(current) !== JSON.stringify(original);
+
+      if (hasChanged) {
+        const hasAnyPermission = Object.values(current).some((p) => p);
+
+        if (hasAnyPermission) {
+          await dispatch(
+            updateItemPermission({
+              itemId,
+              userId,
+              ...current,
+            }),
+          );
+        } else {
+          await dispatch(removeItemPermission({ itemId, userId }));
+        }
+      }
+    }
+
+    dispatch(fetchItemPermissions({ itemId }));
   };
 
   const handleCloseModal = () => {
-    if (success) {
-      dispatch(clearSuccess());
-    }
-    if (error) {
-      dispatch(clearError());
-    }
+    if (success) dispatch(clearSuccess());
+    if (error) dispatch(clearError());
     onClose();
   };
 
@@ -123,6 +167,7 @@ function PermissionModal({ itemId, itemName, onClose }) {
           <div className="permission-modal-content">
             <div className="permission-users-list">
               <h3>Users</h3>
+
               {availableUsers.length === 0 ? (
                 <p className="no-users">No other users available</p>
               ) : (
@@ -134,9 +179,6 @@ function PermissionModal({ itemId, itemName, onClose }) {
                     can_edit: false,
                     can_delete: false,
                   };
-                  const hasAnyPermission = Object.values(userPerms).some(
-                    (p) => p,
-                  );
 
                   return (
                     <div key={user.id} className="permission-user-row">
@@ -167,27 +209,6 @@ function PermissionModal({ itemId, itemName, onClose }) {
                           </label>
                         ))}
                       </div>
-
-                      <div className="permission-actions">
-                        {hasAnyPermission && (
-                          <>
-                            <button
-                              className="btn-save"
-                              onClick={() => handleSavePermissions(user.id)}
-                              disabled={loading}
-                            >
-                              Save
-                            </button>
-                            <button
-                              className="btn-remove"
-                              onClick={() => handleRemovePermission(user.id)}
-                              disabled={loading}
-                            >
-                              Remove
-                            </button>
-                          </>
-                        )}
-                      </div>
                     </div>
                   );
                 })
@@ -197,6 +218,14 @@ function PermissionModal({ itemId, itemName, onClose }) {
         )}
 
         <div className="permission-modal-footer">
+          <button
+            className="btn-save-all"
+            onClick={handleSaveAll}
+            disabled={loading || !hasChanges}
+          >
+            Save All Changes
+          </button>
+
           <button className="btn-close" onClick={handleCloseModal}>
             Close
           </button>

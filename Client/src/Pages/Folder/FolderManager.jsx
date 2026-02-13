@@ -245,7 +245,7 @@ function FolderManager() {
     if (item.type === "folder") {
       return openFolders[item.id] ? "📂" : "📁";
     }
-    // For files, get extension from originalName
+
     let ext = item.extension?.toLowerCase() || "";
     if (!ext && item.originalName) {
       ext = item.originalName

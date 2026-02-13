@@ -67,7 +67,7 @@ function Navbar() {
   return (
     <>
       <Toast ref={toast} />
-      <nav className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg p-4">
+      <nav className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg p-4 z-50 sticky top-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link
@@ -102,7 +102,7 @@ function Navbar() {
 
             <div className="relative">
               <Avatar
-                label={user?.firstName?.[0]?.toUpperCase()}
+                label={(user?.firstName?.[0]?.toUpperCase() + user?.lastName?.[0]?.toUpperCase()) || "U"}
                 size="large"
                 className="bg-white text-blue-600 cursor-pointer font-semibold hover:scale-105 transition-transform"
                 onClick={(e) => menu.current?.toggle(e)}
